@@ -9,10 +9,7 @@ plugins {
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.androidx.room)
   
-  // Optional telemetry plugins - only applied if API keys are present
-  if (System.getenv("EMERGE_API_TOKEN") != null) {
-    alias(libs.plugins.emerge)
-  }
+  // Optional Sentry crash reporting - only applied if API key is present
   if (System.getenv("SENTRY_AUTH_TOKEN") != null) {
     alias(libs.plugins.sentry)
   }
@@ -102,23 +99,6 @@ ksp {
   arg("room.generateKotlin", "true")
 }
 
-// Only configure Emerge if plugin is applied
-if (System.getenv("EMERGE_API_TOKEN") != null) {
-  emerge {
-    snapshots {
-      tag.set("snapshot")
-    }
-
-    vcs {
-      gitHub {
-        // System.getenv override is for integration tests from the emerge-android repository
-        repoName.set(System.getenv("INTEGRATION_TEST_REPO_NAME") ?: "hackernews")
-        repoOwner.set("EmergeTools")
-      }
-    }
-  }
-}
-
 // Only configure Sentry if plugin is applied
 if (System.getenv("SENTRY_AUTH_TOKEN") != null) {
   sentry {
@@ -160,7 +140,6 @@ dependencies {
 
   implementation(libs.extendedspans)
 
-  implementation(libs.emerge.snapshots.runtime)
   implementation(libs.okhttp)
   implementation(libs.retrofit)
   implementation(libs.retrofit.kotlinx.serialization)
@@ -182,7 +161,6 @@ dependencies {
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(platform(libs.androidx.compose.bom))
   androidTestImplementation(libs.androidx.ui.test.junit4)
-  androidTestImplementation(libs.emerge.snapshots)
 
   debugImplementation(libs.androidx.ui.tooling)
   debugImplementation(libs.androidx.ui.test.manifest)

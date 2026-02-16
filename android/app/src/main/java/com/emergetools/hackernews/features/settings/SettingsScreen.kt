@@ -44,7 +44,6 @@ import com.emergetools.hackernews.ui.theme.HackerBlue
 import com.emergetools.hackernews.ui.theme.HackerNewsTheme
 import com.emergetools.hackernews.ui.theme.HackerOrange
 import com.emergetools.hackernews.ui.theme.HackerRed
-import com.emergetools.snapshots.annotations.EmergeAppStoreSnapshot
 import io.sentry.Sentry
 import io.sentry.UpdateStatus
 import kotlinx.coroutines.Dispatchers
