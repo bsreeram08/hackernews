@@ -7,7 +7,11 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.emergetools.hackernews.themeStorage
 
 private val LightColorScheme = lightColorScheme(
   primary = HackerOrange,
@@ -37,14 +41,47 @@ fun HackerNewsTheme(
   dynamicColor: Boolean = false,
   content: @Composable () -> Unit
 ) {
+  val context = LocalContext.current
+  val themeStorage = context.themeStorage()
+  
+  // Collect theme preferences
+  val themePresetName by themeStorage.getThemePreset().collectAsState(initial = null)
+  val customPrimaryColor by themeStorage.getCustomPrimaryColor().collectAsState(initial = null)
+  val customBackgroundColor by themeStorage.getCustomBackgroundColor().collectAsState(initial = null)
+  val customSurfaceColor by themeStorage.getCustomSurfaceColor().collectAsState(initial = null)
+  
+  // Determine which preset to use
+  val themePreset = ThemePreset.fromString(themePresetName)
+  
+  // Get colors from preset or custom values
+  val primaryColor = customPrimaryColor?.let { Color(it) } ?: themePreset.primaryColor
+  val backgroundColor = if (darkTheme) {
+    customBackgroundColor?.let { Color(it) } ?: themePreset.backgroundDark
+  } else {
+    customBackgroundColor?.let { Color(it) } ?: themePreset.backgroundLight
+  }
+  val surfaceColor = if (darkTheme) {
+    customSurfaceColor?.let { Color(it) } ?: themePreset.surfaceDark
+  } else {
+    customSurfaceColor?.let { Color(it) } ?: themePreset.surfaceLight
+  }
+  
   val colorScheme = when {
     dynamicColor -> {
-      val context = LocalContext.current
       if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     }
-
-    darkTheme -> DarkColorScheme
-    else -> LightColorScheme
+    darkTheme -> DarkColorScheme.copy(
+      primary = primaryColor,
+      background = backgroundColor,
+      surface = surfaceColor,
+      surfaceContainer = surfaceColor
+    )
+    else -> LightColorScheme.copy(
+      primary = primaryColor,
+      background = backgroundColor,
+      surface = surfaceColor,
+      surfaceContainer = surfaceColor
+    )
   }
 
   MaterialTheme(
@@ -53,3 +90,4 @@ fun HackerNewsTheme(
     content = content
   )
 }
+

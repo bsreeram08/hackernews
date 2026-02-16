@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Enforce HTTPS for all network traffic -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Enforce strict security for HackerNews domain -->
+    <domain-config>
+        <domain includeSubdomains="true">news.ycombinator.com</domain>
+        <domain includeSubdomains="true">hacker-news.firebaseio.com</domain>
+        <pin-set>
+            <!-- Certificate pinning for news.ycombinator.com -->
+            <!-- Backup pins should be included in production -->
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

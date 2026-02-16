@@ -94,6 +94,29 @@ fun SettingsScreen(
         VersionCard()
         Spacer(modifier = Modifier.height(8.dp))
       }
+      SettingsSectionLabel("Appearance")
+      SettingsCard(
+        leadingIcon = {
+          Icon(
+            modifier = Modifier.width(12.dp),
+            painter = painterResource(R.drawable.ic_settings),
+            tint = HackerOrange,
+            contentDescription = "Theme"
+          )
+        },
+        trailingIcon = {
+          Icon(
+            modifier = Modifier.width(12.dp),
+            painter = painterResource(R.drawable.ic_arrow_up_right),
+            tint = MaterialTheme.colorScheme.onSurface,
+            contentDescription = "Link"
+          )
+        },
+        label = "Theme Customization"
+      ) {
+        navigation(SettingsNavigation.GoToThemeCustomization)
+      }
+      Spacer(modifier = Modifier.height(8.dp))
       SettingsSectionLabel("About")
       BuiltByCard {
         navigation(SettingsNavigation.GoToSettingsLink("https://www.emergetools.com"))

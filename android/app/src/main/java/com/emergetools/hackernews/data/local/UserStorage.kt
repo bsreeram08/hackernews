@@ -1,28 +1,59 @@
 package com.emergetools.hackernews.data.local
 
 import android.content.Context
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import com.emergetools.hackernews.dataStore
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 class UserStorage(private val appContext: Context) {
-  private val cookieKey = stringPreferencesKey("Cookie")
+  private val masterKey = MasterKey.Builder(appContext)
+    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+    .build()
+
+  private val encryptedPrefs: SharedPreferences = EncryptedSharedPreferences.create(
+    appContext,
+    "secure_user_prefs",
+    masterKey,
+    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+  )
+
+  private val cookieFlow = MutableStateFlow<String?>(encryptedPrefs.getString(COOKIE_KEY, null))
+
+  private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+    if (key == COOKIE_KEY) {
+      cookieFlow.value = encryptedPrefs.getString(COOKIE_KEY, null)
+    }
+  }
+
+  init {
+    encryptedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
+  }
 
   suspend fun saveCookie(cookie: String) {
-    appContext.dataStore.edit { store ->
-      store[cookieKey] = cookie
+    withContext(Dispatchers.IO) {
+      encryptedPrefs.edit().putString(COOKIE_KEY, cookie).apply()
+      cookieFlow.value = cookie
     }
   }
 
   suspend fun clearCookie() {
-    appContext.dataStore.edit { store ->
-      store.remove(cookieKey)
+    withContext(Dispatchers.IO) {
+      encryptedPrefs.edit().remove(COOKIE_KEY).apply()
+      cookieFlow.value = null
     }
   }
 
   fun getCookie(): Flow<String?> {
-    return appContext.dataStore.data.map { it[cookieKey] }
+    return cookieFlow.asStateFlow()
+  }
+
+  companion object {
+    private const val COOKIE_KEY = "auth_cookie"
   }
 }

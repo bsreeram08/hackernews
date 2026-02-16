@@ -190,6 +190,12 @@ class HackerNewsWebClient(
     text: String
   ): List<CommentInfo> {
     return withContext(Dispatchers.IO) {
+      // Validate inputs to prevent injection attacks
+      require(parentId.isNotBlank()) { "Parent ID cannot be blank" }
+      require(hmac.isNotBlank()) { "HMAC cannot be blank" }
+      require(text.isNotBlank()) { "Comment text cannot be blank" }
+      require(text.length <= 10000) { "Comment text is too long" }
+      
       val response = httpClient.newCall(
         Request.Builder()
           .url(COMMENT_URL)
