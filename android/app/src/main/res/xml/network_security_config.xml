@@ -11,10 +11,11 @@
     <domain-config>
         <domain includeSubdomains="true">news.ycombinator.com</domain>
         <domain includeSubdomains="true">hacker-news.firebaseio.com</domain>
-        <pin-set>
-            <!-- Certificate pinning for news.ycombinator.com -->
-            <!-- Backup pins should be included in production -->
-        </pin-set>
+        <!-- Certificate pinning can be added here for additional security in production -->
+        <!-- Example: <pin-set expiration="2026-12-31">
+            <pin digest="SHA-256">base64-encoded-pin</pin>
+            <pin digest="SHA-256">base64-encoded-backup-pin</pin>
+        </pin-set> -->
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

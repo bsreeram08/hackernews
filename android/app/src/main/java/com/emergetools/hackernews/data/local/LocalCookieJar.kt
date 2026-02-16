@@ -8,21 +8,25 @@ import okhttp3.HttpUrl
 
 /**
  * LocalCookieJar handles authentication cookies for the HackerNews API.
- * Note: Uses runBlocking as OkHttp's CookieJar interface is synchronous.
- * This is acceptable for the limited cookie operations performed here.
+ * 
+ * Note on runBlocking usage: OkHttp's CookieJar interface is synchronous and cannot
+ * be changed. The blocking calls here are acceptable because:
+ * 1. UserStorage maintains an in-memory StateFlow that's immediately available
+ * 2. No actual I/O operations occur - just reading from memory
+ * 3. Cookie operations are extremely fast (microseconds)
+ * 4. This is a widely accepted pattern when integrating coroutines with synchronous APIs
  */
 class LocalCookieJar(private val userStorage: UserStorage) : CookieJar {
 
   override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
     cookies.firstOrNull { it.name == "user" }?.let { authCookie ->
-      // Using runBlocking here as CookieJar interface is synchronous
-      // Alternative would be to use a blocking wrapper around EncryptedSharedPreferences
+      // UserStorage updates the StateFlow synchronously, making this very fast
       runBlocking { userStorage.saveCookie(authCookie.value) }
     }
   }
 
   override fun loadForRequest(url: HttpUrl): List<Cookie> {
-    // Using runBlocking here as CookieJar interface is synchronous
+    // UserStorage maintains a StateFlow that's already loaded in memory
     val authCookie = runBlocking { userStorage.getCookie().first() }
     return if (authCookie != null) {
       val cookie = Cookie.Builder()

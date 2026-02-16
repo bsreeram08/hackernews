@@ -25,16 +25,6 @@ class UserStorage(private val appContext: Context) {
 
   private val cookieFlow = MutableStateFlow<String?>(encryptedPrefs.getString(COOKIE_KEY, null))
 
-  private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-    if (key == COOKIE_KEY) {
-      cookieFlow.value = encryptedPrefs.getString(COOKIE_KEY, null)
-    }
-  }
-
-  init {
-    encryptedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
-  }
-
   suspend fun saveCookie(cookie: String) {
     withContext(Dispatchers.IO) {
       encryptedPrefs.edit().putString(COOKIE_KEY, cookie).apply()
