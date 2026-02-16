@@ -69,7 +69,12 @@ class HackerNewsWebClient(
             .build()
         ).execute()
 
-        val document = Jsoup.parse(response.body?.string()!!)
+        val responseBody = response.body?.string()
+        if (responseBody == null) {
+          return@withContext LoginResponse.Error
+        }
+        
+        val document = Jsoup.parse(responseBody)
 
         val body = document.body()
         val firstElement = body.firstChild()
@@ -96,7 +101,12 @@ class HackerNewsWebClient(
             .build()
         ).execute()
 
-        val document = Jsoup.parse(response.body?.string()!!)
+        val responseBody = response.body?.string()
+        if (responseBody == null) {
+          return@withContext PostPage.Error("Empty response body")
+        }
+        
+        val document = Jsoup.parse(responseBody)
         val postInfo = document.postInfo(itemId)
         val commentInfos = document.commentInfos()
         val commentFormData = document.commentFormData()
@@ -173,6 +183,11 @@ class HackerNewsWebClient(
 
   suspend fun upvoteItem(url: String): Boolean {
     return withContext(Dispatchers.IO) {
+      // Validate URL to prevent open redirect/SSRF attacks
+      require(url.startsWith(BASE_WEB_URL)) { 
+        "Invalid upvote URL: must start with $BASE_WEB_URL" 
+      }
+      
       val response = httpClient.newCall(
         Request.Builder()
           .url(url)
@@ -210,7 +225,12 @@ class HackerNewsWebClient(
           .build()
       ).execute()
 
-      val document = Jsoup.parse(response.body?.string()!!)
+      val responseBody = response.body?.string()
+      if (responseBody == null) {
+        return@withContext emptyList()
+      }
+      
+      val document = Jsoup.parse(responseBody)
       document.commentInfos()
     }
   }
