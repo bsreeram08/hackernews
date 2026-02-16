@@ -6,10 +6,16 @@ plugins {
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.kotlin.ksp)
-  alias(libs.plugins.emerge)
-  alias(libs.plugins.sentry)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.androidx.room)
+  
+  // Optional telemetry plugins - only applied if API keys are present
+  if (System.getenv("EMERGE_API_TOKEN") != null) {
+    alias(libs.plugins.emerge)
+  }
+  if (System.getenv("SENTRY_AUTH_TOKEN") != null) {
+    alias(libs.plugins.sentry)
+  }
 }
 
 android {
@@ -96,36 +102,42 @@ ksp {
   arg("room.generateKotlin", "true")
 }
 
-emerge {
-  snapshots {
-    tag.set("snapshot")
-  }
+// Only configure Emerge if plugin is applied
+if (System.getenv("EMERGE_API_TOKEN") != null) {
+  emerge {
+    snapshots {
+      tag.set("snapshot")
+    }
 
-  vcs {
-    gitHub {
-      // System.getenv override is for integration tests from the emerge-android repository
-      repoName.set(System.getenv("INTEGRATION_TEST_REPO_NAME") ?: "hackernews")
-      repoOwner.set("EmergeTools")
+    vcs {
+      gitHub {
+        // System.getenv override is for integration tests from the emerge-android repository
+        repoName.set(System.getenv("INTEGRATION_TEST_REPO_NAME") ?: "hackernews")
+        repoOwner.set("EmergeTools")
+      }
     }
   }
 }
 
-sentry {
-  org.set("sentry")
-  projectName.set("hackernews-android")
+// Only configure Sentry if plugin is applied
+if (System.getenv("SENTRY_AUTH_TOKEN") != null) {
+  sentry {
+    org.set("sentry")
+    projectName.set("hackernews-android")
 
-  ignoredVariants.set(listOf("debug"))
+    ignoredVariants.set(listOf("debug"))
 
-  sizeAnalysis {
-    enabled = providers.environmentVariable("GITHUB_ACTIONS").isPresent
+    sizeAnalysis {
+      enabled = providers.environmentVariable("GITHUB_ACTIONS").isPresent
+    }
+
+    distribution {
+      enabled = providers.environmentVariable("GITHUB_ACTIONS").isPresent
+      updateSdkVariants.add("beta")
+    }
+
+    debug = true
   }
-
-  distribution {
-    enabled = providers.environmentVariable("GITHUB_ACTIONS").isPresent
-    updateSdkVariants.add("beta")
-  }
-
-  debug = true
 }
 
 dependencies {

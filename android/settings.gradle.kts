@@ -19,16 +19,7 @@ pluginManagement {
   }
 }
 
-plugins {
-  id("com.gradle.develocity") version("4.3.2")
-}
-
-develocity {
-  buildScan {
-    termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
-    termsOfUseAgree.set("yes")
-  }
-}
+// Removed Develocity telemetry plugin - not needed for builds
 
 dependencyResolutionManagement {
   repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
