@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Enforce HTTPS for all network traffic -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Enforce strict security for HackerNews domain -->
+    <domain-config>
+        <domain includeSubdomains="true">news.ycombinator.com</domain>
+        <domain includeSubdomains="true">hacker-news.firebaseio.com</domain>
+        <!-- Certificate pinning can be added here for additional security in production -->
+        <!-- Example: <pin-set expiration="2026-12-31">
+            <pin digest="SHA-256">base64-encoded-pin</pin>
+            <pin digest="SHA-256">base64-encoded-backup-pin</pin>
+        </pin-set> -->
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

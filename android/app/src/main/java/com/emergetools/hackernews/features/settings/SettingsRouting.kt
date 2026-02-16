@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.emergetools.hackernews.features.themecustomization.ThemeCustomizationRoute
 import com.emergetools.hackernews.ui.components.LocalCustomTabsIntent
 import com.emergetools.hackernews.userStorage
 import kotlinx.serialization.Serializable
@@ -15,6 +16,9 @@ import kotlinx.serialization.Serializable
 sealed interface SettingsDestinations {
   @Serializable
   data object Settings : SettingsDestinations
+  
+  @Serializable
+  data object ThemeCustomization : SettingsDestinations
 }
 
 fun NavGraphBuilder.settingsRoutes(navController: NavController) {
@@ -39,7 +43,19 @@ fun NavGraphBuilder.settingsRoutes(navController: NavController) {
           is SettingsNavigation.GoToSettingsLink -> {
             intent.launchUrl(context, Uri.parse(place.url))
           }
+
+          SettingsNavigation.GoToThemeCustomization -> {
+            navController.navigate(SettingsDestinations.ThemeCustomization)
+          }
         }
+      }
+    )
+  }
+  
+  composable<SettingsDestinations.ThemeCustomization> {
+    ThemeCustomizationRoute(
+      onNavigateBack = {
+        navController.navigateUp()
       }
     )
   }

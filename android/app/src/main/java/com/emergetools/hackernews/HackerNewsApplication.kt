@@ -9,6 +9,7 @@ import androidx.room.Room
 import com.emergetools.hackernews.data.local.BookmarkDao
 import com.emergetools.hackernews.data.local.HackerNewsDatabase
 import com.emergetools.hackernews.data.local.LocalCookieJar
+import com.emergetools.hackernews.data.local.ThemeStorage
 import com.emergetools.hackernews.data.local.UserStorage
 import com.emergetools.hackernews.data.remote.HackerNewsBaseClient
 import com.emergetools.hackernews.data.remote.HackerNewsSearchClient
@@ -25,6 +26,7 @@ class HackerNewsApplication : Application() {
 
   lateinit var bookmarkDao: BookmarkDao
   lateinit var userStorage: UserStorage
+  lateinit var themeStorage: ThemeStorage
   lateinit var searchClient: HackerNewsSearchClient
   lateinit var webClient: HackerNewsWebClient
   lateinit var baseClient: HackerNewsBaseClient
@@ -42,6 +44,7 @@ class HackerNewsApplication : Application() {
     bookmarkDao = db.bookmarkDao()
 
     userStorage = UserStorage(applicationContext)
+    themeStorage = ThemeStorage(applicationContext)
 
     httpClient = OkHttpClient.Builder()
       .readTimeout(Duration.ofSeconds(30))
@@ -54,6 +57,7 @@ class HackerNewsApplication : Application() {
 }
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user")
+val Context.themeDataStore: DataStore<Preferences> by preferencesDataStore(name = "theme")
 
 fun Context.baseClient(): HackerNewsBaseClient {
   return (this.applicationContext as HackerNewsApplication).baseClient
@@ -61,6 +65,10 @@ fun Context.baseClient(): HackerNewsBaseClient {
 
 fun Context.userStorage(): UserStorage {
   return (this.applicationContext as HackerNewsApplication).userStorage
+}
+
+fun Context.themeStorage(): ThemeStorage {
+  return (this.applicationContext as HackerNewsApplication).themeStorage
 }
 
 fun Context.searchClient(): HackerNewsSearchClient {

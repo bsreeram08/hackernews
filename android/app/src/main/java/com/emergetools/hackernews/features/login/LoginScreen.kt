@@ -32,7 +32,6 @@ import com.emergetools.hackernews.ui.preview.AppStoreSnapshot
 import com.emergetools.hackernews.ui.preview.SnapshotPreview
 import com.emergetools.hackernews.ui.theme.HackerNewsTheme
 import com.emergetools.hackernews.ui.theme.HackerRed
-import com.emergetools.snapshots.annotations.EmergeAppStoreSnapshot
 
 @Composable
 fun LoginScreen(

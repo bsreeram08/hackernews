@@ -1,0 +1,156 @@
+.gitlab-ci.yml
+# GitLab CI/CD Pipeline for Android Releases
+# Triggers on version tags (e.g., v1.0.0, android-1.0.6)
+
+stages:
+  - build
+  - test
+  - release
+
+variables:
+  # Android SDK versions
+  ANDROID_COMPILE_SDK: "36"
+  ANDROID_BUILD_TOOLS: "36.0.0"
+  ANDROID_SDK_TOOLS: "11076708"
+  
+  # Gradle settings
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
+  
+  # Paths
+  ANDROID_DIR: "android"
+
+# Build only on tags
+workflow:
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^(android-|v)\d+\.\d+\.\d+$/'
+      when: always
+    - when: never
+
+# Cache Gradle dependencies
+cache:
+  key: ${CI_PROJECT_ID}
+  paths:
+    - android/.gradle/
+    - android/build/
+    - android/app/build/
+
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/android/.gradle
+  - cd $ANDROID_DIR
+
+# Build Debug APK (for testing)
+build:debug:
+  stage: build
+  image: eclipse-temurin:17-jdk
+  script:
+    - ./gradlew assembleDebug --stacktrace
+    - echo "Debug APK built successfully"
+  artifacts:
+    paths:
+      - android/app/build/outputs/apk/debug/*.apk
+    expire_in: 1 week
+  tags:
+    - docker
+
+# Build Release AAB (for Play Store)
+build:release:
+  stage: build
+  image: eclipse-temurin:17-jdk
+  script:
+    # Decode keystore from base64
+    - echo $ANDROID_KEYSTORE_BASE64 | base64 -d > $CI_PROJECT_DIR/keystore.jks
+    - export DECODED_KEYSTORE_PATH=$CI_PROJECT_DIR/keystore.jks
+    
+    # Build release AAB
+    - ./gradlew :app:bundlePlayStoreRelease --stacktrace
+    
+    # Convert AAB to Universal APK
+    - |
+      if [ ! -f bundletool.jar ]; then
+        wget https://github.com/google/bundletool/releases/download/1.17.0/bundletool-all-1.17.0.jar -O bundletool.jar
+      fi
+    
+    - java -jar bundletool.jar build-apks \
+        --mode=universal \
+        --bundle=app/build/outputs/bundle/playStoreRelease/app-playStoreRelease.aab \
+        --output=app-release.apks \
+        --ks=$DECODED_KEYSTORE_PATH \
+        --ks-pass=pass:$RELEASE_STORE_PASSWORD \
+        --ks-key-alias=$RELEASE_KEY_ALIAS \
+        --key-pass=pass:$RELEASE_KEY_PASSWORD
+    
+    - unzip -o app-release.apks -d apks/
+    - mv apks/universal.apk app/build/outputs/apk/release/app-release-universal.apk
+    
+    # Cleanup keystore
+    - rm -f $CI_PROJECT_DIR/keystore.jks
+  
+  artifacts:
+    paths:
+      - android/app/build/outputs/bundle/playStoreRelease/*.aab
+      - android/app/build/outputs/apk/release/*.apk
+    expire_in: 30 days
+  
+  only:
+    - tags
+  
+  tags:
+    - docker
+  
+  environment:
+    name: production
+
+# Run unit tests
+test:unit:
+  stage: test
+  image: eclipse-temurin:17-jdk
+  script:
+    - ./gradlew test --stacktrace
+  artifacts:
+    reports:
+      junit: android/app/build/test-results/test*/**/*.xml
+    paths:
+      - android/app/build/reports/tests/
+    expire_in: 1 week
+  tags:
+    - docker
+
+# Create GitLab Release
+release:create:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - build:release
+  script:
+    - echo "Creating release for tag $CI_COMMIT_TAG"
+  
+  release:
+    tag_name: '$CI_COMMIT_TAG'
+    name: 'Hacker News Android $CI_COMMIT_TAG'
+    description: |
+      ## Android Release $CI_COMMIT_TAG
+      
+      ### What's Included
+      - Universal APK (works on all devices)
+      - Play Store AAB bundle
+      
+      ### Installation
+      Download the universal APK and install on your Android device.
+      
+      ### Changes
+      See CHANGELOG.md for details.
+    
+    assets:
+      links:
+        - name: 'Universal APK'
+          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/android/app/build/outputs/apk/release/app-release-universal.apk?job=build:release'
+          link_type: 'package'
+        - name: 'Play Store Bundle (AAB)'
+          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/android/app/build/outputs/bundle/playStoreRelease/app-playStoreRelease.aab?job=build:release'
+          link_type: 'package'
+  
+  only:
+    - tags
+  
+  tags:
+    - docker

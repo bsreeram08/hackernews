@@ -27,6 +27,7 @@ sealed interface SettingsNavigation {
   }
 
   data class GoToSettingsLink(val url: String) : SettingsNavigation
+  data object GoToThemeCustomization : SettingsNavigation
 }
 
 class SettingsViewModel(private val userStorage: UserStorage) : ViewModel() {

@@ -6,10 +6,13 @@ plugins {
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.kotlin.ksp)
-  alias(libs.plugins.emerge)
-  alias(libs.plugins.sentry)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.androidx.room)
+  
+  // Optional Sentry crash reporting - only applied if API key is present
+  if (System.getenv("SENTRY_AUTH_TOKEN") != null) {
+    alias(libs.plugins.sentry)
+  }
 }
 
 android {
@@ -96,36 +99,25 @@ ksp {
   arg("room.generateKotlin", "true")
 }
 
-emerge {
-  snapshots {
-    tag.set("snapshot")
-  }
+// Only configure Sentry if plugin is applied
+if (System.getenv("SENTRY_AUTH_TOKEN") != null) {
+  sentry {
+    org.set("sentry")
+    projectName.set("hackernews-android")
 
-  vcs {
-    gitHub {
-      // System.getenv override is for integration tests from the emerge-android repository
-      repoName.set(System.getenv("INTEGRATION_TEST_REPO_NAME") ?: "hackernews")
-      repoOwner.set("EmergeTools")
+    ignoredVariants.set(listOf("debug"))
+
+    sizeAnalysis {
+      enabled = providers.environmentVariable("GITHUB_ACTIONS").isPresent
     }
+
+    distribution {
+      enabled = providers.environmentVariable("GITHUB_ACTIONS").isPresent
+      updateSdkVariants.add("beta")
+    }
+
+    debug = true
   }
-}
-
-sentry {
-  org.set("sentry")
-  projectName.set("hackernews-android")
-
-  ignoredVariants.set(listOf("debug"))
-
-  sizeAnalysis {
-    enabled = providers.environmentVariable("GITHUB_ACTIONS").isPresent
-  }
-
-  distribution {
-    enabled = providers.environmentVariable("GITHUB_ACTIONS").isPresent
-    updateSdkVariants.add("beta")
-  }
-
-  debug = true
 }
 
 dependencies {
@@ -143,11 +135,11 @@ dependencies {
   implementation(libs.androidx.shapes)
   implementation(libs.androidx.browser)
   implementation(libs.androidx.datastore)
+  implementation(libs.androidx.security.crypto)
   implementation(libs.androidx.startup)
 
   implementation(libs.extendedspans)
 
-  implementation(libs.emerge.snapshots.runtime)
   implementation(libs.okhttp)
   implementation(libs.retrofit)
   implementation(libs.retrofit.kotlinx.serialization)
@@ -169,7 +161,6 @@ dependencies {
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(platform(libs.androidx.compose.bom))
   androidTestImplementation(libs.androidx.ui.test.junit4)
-  androidTestImplementation(libs.emerge.snapshots)
 
   debugImplementation(libs.androidx.ui.tooling)
   debugImplementation(libs.androidx.ui.test.manifest)
